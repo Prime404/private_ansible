@@ -1,0 +1,4 @@
+---
+# environment checking to run a specific yml depending on OS
+- import_tasks: centos.yml
+  when: ansible_distribution == "CentOS"

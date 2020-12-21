@@ -1,0 +1,65 @@
+---
+- name: Add Nginx stable repository
+  yum_repository:
+    name: nginx
+    description: Nginx Stable Repository
+    baseurl: http://nginx.org/packages/centos/$releasever/$basearch/
+    gpgcheck: yes
+    enabled: yes
+
+- name: Install nginx
+  yum:
+    name: nginx
+    state: latest
+    enablerepo: nginx
+
+- name: Enable the nginx service
+  systemd:
+    name: nginx
+    enabled: yes
+    state: started
+
+- name: Copy base configuration
+  copy:
+    src: files/nginx.conf
+    dest: /etc/nginx/nginx.conf
+    owner: root
+    group: root
+
+- name: Create directories required for nginx
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /etc/nginx/sites-enabled
+    - /etc/nginx/sites-available
+    - /var/www/{{ server_hostname }}/public_html
+
+- name: Copy example index.html
+  template:
+    src: templates/index_html.j2
+    dest: /var/www/{{ server_hostname }}/public_html/index.html
+
+- name: Setup default vhost based on template
+  template:
+    src: templates/vhost_example.j2
+    dest: /etc/nginx/sites-available/{{ server_hostname }}.conf
+
+- name: Create symlink to enable the configuration
+  file:
+    src: /etc/nginx/sites-available/{{ server_hostname }}.conf
+    dest: /etc/nginx/sites-enabled/{{ server_hostname }}.conf
+    state: link
+
+- name: Restart nginx to apply configuration change
+  systemd:
+    name: nginx
+    state: restarted
+
+- name: Opening the gates.. or firewall for Nginx
+  firewalld:
+    zone: public
+    service: http
+    permanent: yes
+    state: enabled

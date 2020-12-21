@@ -1,0 +1,26 @@
+---
+- hosts: dedi
+  become_user: root
+  become_method: sudo
+  remote_user: sysop
+
+  # begin Static variables for provision of services
+  vars:
+    server_hostname: myhostname.goes.here
+    is_seedbox: true
+    bittorrent_backend: 25552
+    openvpn: false
+  # end Static variables for provision of services
+
+  # here we define the roles to run
+  roles:
+    - role: general
+      become: yes
+      become_method: sudo
+    - role: httpd
+      become: yes
+      become_method: sudo
+    - role: qbittorrent-nox
+      when: is_seedbox | bool
+      become: yes
+      become_method: sudo

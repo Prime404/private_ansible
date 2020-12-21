@@ -1,0 +1,51 @@
+---
+- debug:
+    msg: "Host is CentOS"
+
+# Set the system hostname
+- name:
+  hostname:
+    name: "{{ server_hostname }}"
+
+# Update the system
+- name: Updating the system
+  yum:
+    name: "*"
+    state: latest
+
+# Install epel-release
+- name: Party like it's epel release
+  yum:
+    name: epel-release
+    state: latest
+
+# Install a variety of commands I like use at times
+- name: Install various helpful packages
+  yum:
+    name: "{{ packages }}"
+    state: present
+  vars:
+    packages:
+    - whois
+    - htop
+    - iftop
+    - iotop
+    - nano
+    - ncdu
+    - bind-utils
+    - vnstat
+    - firewalld
+
+# Enable service for bandwidth usage monitoring
+- name: Enable the vnstat service
+  systemd:
+    name: vnstat
+    enabled: yes
+    state: started
+
+# Enable firewalld for easy firewall rule management
+- name: Enable the firewalld service
+  systemd:
+    name: firewalld
+    enabled: yes
+    state: started

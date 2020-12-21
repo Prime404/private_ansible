@@ -1,0 +1,57 @@
+---
+- name: Install qbittorrent-nox package
+  yum:
+    name: qbittorrent-nox
+    state: latest
+
+- name: Create user qbittorrent-nox to run service as
+  user:
+    name: qbittorrent-nox
+    shell: /sbin/nologin
+    home: /var/qbittorrent-nox/
+
+- name: Adding managed systemd unit for the service
+  blockinfile:
+    path:  /etc/systemd/system/qbittorrent-nox.service
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    backup: yes
+    create: yes
+    block: |
+      [Unit]
+      Description=qBittorrent-nox service
+      Wants=network-online.target
+      After=network-online.target nss-lookup.target
+
+      [Service]
+      Type=qbittorrent-nox
+      User=qbittorrent-nox
+      Group=qbittorrent-nox
+      WorkingDirectory=/var/qbittorrent-nox/
+      ExecStart=/usr/bin/qbittorrent-nox --webui-port={{ bittorrent_backend }}
+
+      # Security hardening
+      PrivateDevices=true
+      ProtectControlGroups=true
+      ProtectHome=true
+      ProtectKernelTunables=true
+      ProtectSystem=full
+      RestrictSUIDSGID=true
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Reloading the systemd daemon for changes to take effect
+  systemd:
+    daemon_reload: yes
+
+- name: Enabling and starting the service
+  systemd:
+    name: qbittorrent-nox
+    enabled: yes
+    state: started
+
+- name: Creating symlink for easy access to logs
+  file:
+    src: /var/qbittorrent-nox/.local/share/data/qBittorrent/logs/qbittorrent.log
+    dest: /var/log/qbittorrent.log
+    state: link
